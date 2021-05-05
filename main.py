@@ -4,6 +4,11 @@ import random
 import os
 
 
+def check_response_from_vk_api(response):
+    if response.get('error'):
+        raise Exception(response['error']['error_msg'])
+
+
 def get_request(url, params={}):
     response = requests.get(url, params=params)
     response.raise_for_status()
@@ -27,8 +32,9 @@ def get_xkcd_comic():
 
 def get_url_for_uploading(params):
     url = 'https://api.vk.com/method/photos.getWallUploadServer'
-    response = get_request(url, params=params)
-    return response.json()['response']['upload_url']
+    response = get_request(url, params=params).json()
+    check_response_from_vk_api(response)
+    return response['response']['upload_url']
 
 
 def upload_image_to_server(url, file_name):
@@ -39,18 +45,22 @@ def upload_image_to_server(url, file_name):
         response = requests.post(url, files=files)
         response.raise_for_status()
 
-    return {
-                'server': response.json()['server'],
-                'photo': response.json()['photo'],
-                'hash': response.json()['hash'],
-            }
+    if response.json()['photo']:
+        return {
+                    'server': response.json()['server'],
+                    'photo': response.json()['photo'],
+                    'hash': response.json()['hash'],
+                }
+    else:
+        raise Exception('Не удалось загрузить изображение на сервер')
 
 
 def save_image_on_server(params, meta):
     url = 'https://api.vk.com/method/photos.saveWallPhoto'
     params.update(meta)
-    response = get_request(url, params)
-    return response.json()
+    response = get_request(url, params).json()
+    check_response_from_vk_api(response)
+    return response
 
 
 def publish_image_in_group(params, message, meta):
@@ -67,32 +77,29 @@ def publish_image_in_group(params, message, meta):
             'attachments': attachments
         }
     )
-    response = get_request(url, params=params)
-    return response.json()['response']['post_id']
+    response = get_request(url, params=params).json()
+    check_response_from_vk_api(response)
+    return response['response']['post_id']
 
 
 def main():
-    load_dotenv()
-    params = {
-        'group_id': os.getenv('GROUP_ID'),
-        'access_token': os.getenv('ACCESS_TOKEN'),
-        'v': '5.130',
-    }
-    image_name, image_title = get_xkcd_comic()
-    upload_url = get_url_for_uploading(params.copy())
-    meta = upload_image_to_server(upload_url, image_name)
-    if meta['photo']:
+    try:
+        load_dotenv()
+        params = {
+            'group_id': os.getenv('GROUP_ID'),
+            'access_token': os.getenv('ACCESS_TOKEN'),
+            'v': '5.130',
+        }
+        image_name, image_title = get_xkcd_comic()
+        upload_url = get_url_for_uploading(params.copy())
+        meta = upload_image_to_server(upload_url, image_name)
         meta = save_image_on_server(params.copy(), meta)
         post_id = publish_image_in_group(params.copy(), image_title, meta)
+    except Exception as e:
+        print(e)
+    finally:
         os.remove(image_name)
-    else:
-        raise Exception('Не удалось загрузить изображение на сервер')
-
-    print(post_id)
 
 
 if __name__ == '__main__':
-    try:
-        main()
-    except Exception as e:
-        print(e)
+    main()
