@@ -46,30 +46,30 @@ def upload_image_to_server(url, file_name):
         response.raise_for_status()
 
     if response.json()['photo']:
-        return {
-                    'server': response.json()['server'],
-                    'photo': response.json()['photo'],
-                    'hash': response.json()['hash'],
-                }
+        return (
+                    response.json()['server'],
+                    response.json()['photo'],
+                    response.json()['hash'],
+                )
     else:
         raise Exception('Не удалось загрузить изображение на сервер')
 
 
-def save_image_on_server(params, meta):
+def save_image_on_server(params, server, photo, hash):
     url = 'https://api.vk.com/method/photos.saveWallPhoto'
-    params.update(meta)
+    params.update({
+        'server': server,
+        'photo': photo,
+        'hash': hash,
+    })
     response = get_request(url, params).json()
     check_response_from_vk_api(response)
-    return response
+    return response['response'][0]['owner_id'], response['response'][0]['id']
 
 
-def publish_image_in_group(params, message, meta):
+def publish_image_in_group(params, message, owner_id, media_id):
     url = 'https://api.vk.com/method/wall.post'
-    attachments = '{}{}_{}'.format(
-        'photo',
-        meta['response'][0]['owner_id'],
-        meta['response'][0]['id']
-    )
+    attachments = '{}{}_{}'.format('photo', owner_id, media_id)
     params.update(
         {
             'owner_id': '-{}'.format(params['group_id']),
@@ -83,18 +83,18 @@ def publish_image_in_group(params, message, meta):
 
 
 def main():
+    load_dotenv()
+    params = {
+        'group_id': os.getenv('GROUP_ID'),
+        'access_token': os.getenv('ACCESS_TOKEN'),
+        'v': '5.130',
+    }
     try:
-        load_dotenv()
-        params = {
-            'group_id': os.getenv('GROUP_ID'),
-            'access_token': os.getenv('ACCESS_TOKEN'),
-            'v': '5.130',
-        }
         image_name, image_title = get_xkcd_comic()
         upload_url = get_url_for_uploading(params.copy())
-        meta = upload_image_to_server(upload_url, image_name)
-        meta = save_image_on_server(params.copy(), meta)
-        post_id = publish_image_in_group(params.copy(), image_title, meta)
+        server, photo, hash = upload_image_to_server(upload_url, image_name)
+        owner_id, media_id = save_image_on_server(params.copy(), server, photo, hash)
+        post_id = publish_image_in_group(params.copy(), image_title, owner_id, media_id)
     except Exception as e:
         print(e)
     finally:
