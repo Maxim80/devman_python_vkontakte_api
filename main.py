@@ -17,7 +17,7 @@ def get_request(url, params={}):
 
 def get_xkcd_comic():
     last_comic_number = get_request('http://xkcd.com/info.0.json').json()['num']
-    comic_number = random.randint(1, last_comic_number + 1)
+    comic_number = random.randint(1, last_comic_number)
     url = 'http://xkcd.com/{}/info.0.json'.format(comic_number)
     meta_info = get_request(url).json()
     comic_url = meta_info['img']
@@ -39,18 +39,12 @@ def get_url_for_uploading(params):
 
 def upload_image_to_server(url, file_name):
     with open(file_name, 'rb') as file:
-        files = {
-            'photo': file,
-        }
-        response = requests.post(url, files=files)
+        files = {'photo': file}
+        response = requests.post(url, files=files).json()
         response.raise_for_status()
 
-    if response.json()['photo']:
-        return (
-                    response.json()['server'],
-                    response.json()['photo'],
-                    response.json()['hash'],
-                )
+    if response['photo']:
+        return response['server'], response['photo'], response['hash']
     else:
         raise Exception('Не удалось загрузить изображение на сервер')
 
@@ -70,11 +64,10 @@ def save_image_on_server(params, server, photo, hash):
 def publish_image_in_group(params, message, owner_id, media_id):
     url = 'https://api.vk.com/method/wall.post'
     attachments = '{}{}_{}'.format('photo', owner_id, media_id)
-    params.update(
-        {
-            'owner_id': '-{}'.format(params['group_id']),
-            'message': message,
-            'attachments': attachments
+    params.update({
+        'owner_id': '-{}'.format(params['group_id']),
+        'message': message,
+        'attachments': attachments
         }
     )
     response = get_request(url, params=params).json()
@@ -86,7 +79,7 @@ def main():
     load_dotenv()
     params = {
         'group_id': os.getenv('GROUP_ID'),
-        'access_token': os.getenv('ACCESS_TOKEN'),
+        'access_token': os.getenv('VK_API_ACCESS_TOKEN'),
         'v': '5.130',
     }
     try:
