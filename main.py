@@ -1,4 +1,5 @@
 from dotenv import load_dotenv
+from urllib.parse import urlparse
 import requests
 import random
 import os
@@ -15,14 +16,29 @@ def get_request(url, params={}):
     return response
 
 
+def post_requests(url, filename):
+    with open(filename, 'rb') as file:
+        files = {'photo': file}
+        response = requests.post(url, files=files)
+        response.raise_for_status()
+
+    return response
+
+
+def get_filename_from_url(url):
+    url_parse = urlparse(url)
+    filename = os.path.basename(url_parse.path)
+    return filename
+
+
 def get_xkcd_comic():
     last_comic_number = get_request('http://xkcd.com/info.0.json').json()['num']
     comic_number = random.randint(1, last_comic_number)
-    url = 'http://xkcd.com/{}/info.0.json'.format(comic_number)
-    meta_info = get_request(url).json()
-    comic_url = meta_info['img']
-    comic_name = comic_url.split('/')[-1]
-    comic_title = meta_info['title']
+    base_url = 'http://xkcd.com/{}/info.0.json'.format(comic_number)
+    response = get_request(base_url).json()
+    comic_url = response['img']
+    comic_name = get_filename_from_url(comic_url)
+    comic_title = response['title']
     comic_file = get_request(comic_url).content
     with open(comic_name, 'wb') as file:
         file.write(comic_file)
@@ -37,12 +53,9 @@ def get_url_for_uploading(params):
     return response['response']['upload_url']
 
 
-def upload_image_to_server(url, file_name):
-    with open(file_name, 'rb') as file:
-        files = {'photo': file}
-        response = requests.post(url, files=files).json()
-        response.raise_for_status()
-
+def upload_image_to_server(url, filename):
+    response = post_requests(url, filename).json()
+    check_response_from_vk_api(response)
     if response['photo']:
         return response['server'], response['photo'], response['hash']
     else:
@@ -78,7 +91,7 @@ def publish_image_in_group(params, message, owner_id, media_id):
 def main():
     load_dotenv()
     params = {
-        'group_id': os.getenv('GROUP_ID'),
+        'group_id': os.getenv('VK_GROUP_ID'),
         'access_token': os.getenv('VK_API_ACCESS_TOKEN'),
         'v': '5.130',
     }
