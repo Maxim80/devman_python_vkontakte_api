@@ -7,7 +7,7 @@ import os
 
 def check_response_from_vk_api(response):
     if response.get('error'):
-        raise Exception(response['error']['error_msg'])
+        raise requests.HTTPError(response['error']['error_msg'])
 
 
 def get_request(url, params={}):
@@ -62,13 +62,9 @@ def upload_image_to_server(url, filename):
         raise Exception('Не удалось загрузить изображение на сервер')
 
 
-def save_image_on_server(params, server, photo, hash):
+def save_image_on_server(params, server, photo, image_hash):
     url = 'https://api.vk.com/method/photos.saveWallPhoto'
-    params.update({
-        'server': server,
-        'photo': photo,
-        'hash': hash,
-    })
+    params = {**params, **{'server': server, 'photo': photo, 'hash': image_hash}}
     response = get_request(url, params).json()
     check_response_from_vk_api(response)
     return response['response'][0]['owner_id'], response['response'][0]['id']
@@ -77,12 +73,12 @@ def save_image_on_server(params, server, photo, hash):
 def publish_image_in_group(params, message, owner_id, media_id):
     url = 'https://api.vk.com/method/wall.post'
     attachments = '{}{}_{}'.format('photo', owner_id, media_id)
-    params.update({
+    params = {**params, **{
         'owner_id': '-{}'.format(params['group_id']),
         'message': message,
         'attachments': attachments
-        }
-    )
+                           }
+    }
     response = get_request(url, params=params).json()
     check_response_from_vk_api(response)
     return response['response']['post_id']
@@ -95,13 +91,13 @@ def main():
         'access_token': os.getenv('VK_API_ACCESS_TOKEN'),
         'v': '5.130',
     }
+    image_name, image_title = get_xkcd_comic()
     try:
-        image_name, image_title = get_xkcd_comic()
         upload_url = get_url_for_uploading(params.copy())
-        server, photo, hash = upload_image_to_server(upload_url, image_name)
-        owner_id, media_id = save_image_on_server(params.copy(), server, photo, hash)
-        post_id = publish_image_in_group(params.copy(), image_title, owner_id, media_id)
-    except Exception as e:
+        server, photo, image_hash = upload_image_to_server(upload_url, image_name)
+        owner_id, media_id = save_image_on_server(params, server, photo, image_hash)
+        post_id = publish_image_in_group(params, image_title, owner_id, media_id)
+    except requests.HTTPError as e:
         print(e)
     finally:
         os.remove(image_name)

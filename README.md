@@ -1,17 +1,31 @@
 # Публикация комиксов
 
-Скрипт скачивает случайный комикс с ресурса [xkcd.com](https://xkcd.com/) и публикует его в группе, в социальной сети [ВКонтакте](https://vk.com/).
+Скрипт скачивает случайный комикс с ресурса [xkcd.com] (https://xkcd.com/)  и публикует его в группе, в социальной сети [ВКонтакте](https://vk.com/).
 
 ### Как установить
-Клонировать репозиторий на локальный компьютер.
-Установить зависимости:
+Клонируйте репозиторий на локальный компьютер:
+```
+$ git clone https://github.com/Maxim80/devman_python_vkontakte_api.git
+```
+
+Создайте и активируйте виртуальное окружение (рекомендовано). Пример:
+```
+$ virtualenv -p python3.9 venv
+$ source venv/bin/activate
+```
+
+Установите зависимости:
 ```
 pip install requirements.txt
 ```
 
-Для работы скрипта необходимо установить две переменные окружения:
-VK_API_ACCESS_TOKEN - токен для авторизации, процедура [Implicit Flow](https://vk.com/dev/implicit_flow_user).
-VK_GROUP_ID - ID группы ВКонтакте, в которой будут публиковаться комиксы. Узнать group_id для вашей группы можно [здесь](https://regvk.com/id/).
+Получите ключ доступа пользователя, процедура [Implicit Flow](https://vk.com/dev/implicit_flow_user). Он нужен для того, чтобы ваше приложение имело доступ к вашему аккаунту и могло публиковать сообщения в группах. Потребуются следующие права: "photos", "groups",  "wall" и "offline".
+
+Создайте и заполните файл `.env`:
+```
+VK_API_ACCESS_TOKEN=<ваш access token ВКонтакте>
+VK_GROUP_ID=<ID группы ВКонтакте, в которой будут публиковаться комиксы>
+```
 
 Запустить скрипт:
 ```
@@ -29,15 +43,29 @@ python main.py
 The script downloads a random comic from the resource [xkcd.com] (https://xkcd.com/) and publishes it in a group on a social network [VK](https://vk.com/).
 
 ### How to install
-Clone the repository to your local computer.
+Clone the repository to your local computer:
+```
+$ git clone https://github.com/Maxim80/devman_python_vkontakte_api.git
+```
+
+Create a virtual and activate environment (recommended). Example:
+```
+$ virtualenv -p python3.9 venv
+$ source venv/bin/activate
+```
+
 Install dependencies:
 ```
 pip install requirements.txt
 ```
 
-For the script to work, set two environment variables:
-VK_API_ACCESS_TOKEN - authorization token, procedure [Implicit Flow](https://vk.com/dev/implicit_flow_user).
-VK_GROUP_ID - ID of the VKontakte group in which the comics will be published. You can find out the group_id for your group [here](https://regvk.com/id/).
+Get the user's access token, procedure [Implicit Flow](https://vk.com/dev/implicit_flow_user). It is needed so that your application has access to your account and can post messages to groups. The following rights are required: "photos", "groups", "wall" and "offline".
+
+Create and populate a `.env` file:
+```
+VK_API_ACCESS_TOKEN=<your VK access token>
+VK_GROUP_ID=<ID of the VKontakte group in which the comics will be published>
+```
 
 Run script:
 ```
