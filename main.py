@@ -64,7 +64,7 @@ def upload_image_to_server(url, filename):
 
 def save_image_on_server(params, server, photo, image_hash):
     url = 'https://api.vk.com/method/photos.saveWallPhoto'
-    params = {**params, **{'server': server, 'photo': photo, 'hash': image_hash}}
+    params = {**params, 'server': server, 'photo': photo, 'hash': image_hash}
     response = get_request(url, params).json()
     check_response_from_vk_api(response)
     return response['response'][0]['owner_id'], response['response'][0]['id']
@@ -73,11 +73,11 @@ def save_image_on_server(params, server, photo, image_hash):
 def publish_image_in_group(params, message, owner_id, media_id):
     url = 'https://api.vk.com/method/wall.post'
     attachments = '{}{}_{}'.format('photo', owner_id, media_id)
-    params = {**params, **{
+    params = {
+        **params,
         'owner_id': '-{}'.format(params['group_id']),
         'message': message,
         'attachments': attachments
-                           }
     }
     response = get_request(url, params=params).json()
     check_response_from_vk_api(response)
