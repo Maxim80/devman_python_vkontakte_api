@@ -31,7 +31,7 @@ def get_filename_from_url(url):
     return filename
 
 
-def get_xkcd_comic():
+def get_random_xkcd_comic():
     last_comic_number = get_request('http://xkcd.com/info.0.json').json()['num']
     comic_number = random.randint(1, last_comic_number)
     base_url = 'http://xkcd.com/{}/info.0.json'.format(comic_number)
@@ -91,7 +91,7 @@ def main():
         'access_token': os.getenv('VK_API_ACCESS_TOKEN'),
         'v': '5.130',
     }
-    image_name, image_title = get_xkcd_comic()
+    image_name, image_title = get_random_xkcd_comic()
     try:
         upload_url = get_url_for_uploading(params.copy())
         server, photo, image_hash = upload_image_to_server(upload_url, image_name)
